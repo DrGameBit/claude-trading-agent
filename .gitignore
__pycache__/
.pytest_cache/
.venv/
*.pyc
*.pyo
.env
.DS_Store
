@@ -1,0 +1,32 @@
+from __future__ import annotations
+
+import click
+
+from .agent import TradingAgent
+from .config import AgentSettings
+
+
+@click.command()
+@click.option("--symbols", multiple=True, default=("SPY", "QQQ", "AAPL", "BTC-USD", "ETH-USD"), help="Symbols to analyze")
+@click.option("--interval", default="1d", show_default=True, help="Market data interval for yfinance")
+@click.option("--days", default=365, show_default=True, help="Lookback period in days")
+@click.option("--backtest", is_flag=True, help="Run a simplified backtest instead of a current snapshot")
+def main(symbols, interval, days, backtest):
+    settings = AgentSettings(symbols=list(symbols), interval=interval, period=f"{days}d")
+    agent = TradingAgent(settings=settings)
+
+    if backtest:
+        signals = agent.snapshot()
+        click.echo("Backtest snapshot:")
+        for row in signals:
+            click.echo(f"{row['symbol']}: {row['action']} | score={row['score']:.2f} | confidence={row['confidence']:.2f} | reason={row['reason']}")
+        return
+
+    snapshot = agent.snapshot()
+    click.echo("Trading Agent Snapshot:")
+    for row in snapshot:
+        click.echo(f"{row['symbol']}: {row['action']} | score={row['score']:.2f} | confidence={row['confidence']:.2f} | price=${row['price']:.2f}")
+
+
+if __name__ == "__main__":
+    main()
